@@ -5,7 +5,6 @@ use sqlx::{SqlitePool, Row};
 use std::env;
 use std::time::Duration;
 use tokio::time::sleep;
-use tokio_cron_scheduler::{Job, JobScheduler};
 use chrono::{DateTime, Utc, Datelike, Timelike};
 use chrono_tz::Tz;
 use tracing_subscriber;
@@ -374,52 +373,6 @@ async fn check_and_notify_new_matches(
     Ok(())
 }
 
-async fn send_morning_reminder(
-    client: &reqwest::Client,
-    pool: &SqlitePool,
-    config: &Config,
-) -> Result<()> {
-    let message = "🌅 Good morning! Team Vitality is ready to compete today! 🎮".to_string();
-    send_telegram_message(client, config, &message).await?;
-    record_notification(pool, 0, "morning_reminder", &message).await?;
-    
-    tracing::info!("Morning reminder sent");
-    Ok(())
-}
-
-async fn schedule_daily_reminder(
-    client: &reqwest::Client,
-    pool: &SqlitePool,
-    config: &Config,
-) -> Result<()> {
-    let tz: Tz = config.timezone.parse()?;
-    let hour = config.morning_hour;
-    
-    let scheduler = JobScheduler::new().await?;
-    
-    scheduler.add(Job::new_async("daily_reminder", move |_uuid, _l| {
-        let client = client.clone();
-        let pool = pool.clone();
-        let config = config.clone();
-        
-        async move {
-            // Check if it's the right day and hour
-            let now: DateTime<Utc> = Utc::now();
-            let local_time = now.with_timezone(&tz);
-            
-            if local_time.hour() == hour {
-                if let Err(e) = send_morning_reminder(&client, &pool, &config).await {
-                    tracing::error!("Failed to send morning reminder: {}", e);
-                }
-            }
-        }
-    })).await?;
-    
-    scheduler.start().await?;
-    
-    Ok(())
-}
-
 async fn health_check_server(port: u16) -> Result<()> {
     use warp::Filter;
     
@@ -457,9 +410,6 @@ async fn main() -> Result<()> {
             tracing::error!("Health check server failed: {}", e);
         }
     });
-    
-    // Schedule daily reminders
-    schedule_daily_reminder(&client, &pool, &config).await?;
     
     tracing::info!("Starting main polling loop...");
     
