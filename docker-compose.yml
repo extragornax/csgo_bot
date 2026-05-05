@@ -6,7 +6,7 @@ services:
     container_name: vitality_bot
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "9021:3000"
     volumes:
       - ./data:/app/data
     environment:
