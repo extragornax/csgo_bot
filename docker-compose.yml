@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  vitality_bot:
+    build: .
+    container_name: vitality_bot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PANDASCORE_TOKEN=${PANDASCORE_TOKEN}
+      - VITALITY_TEAM_ID=${VITALITY_TEAM_ID}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - POLL_INTERVAL_SECS=${POLL_INTERVAL_SECS:-120}
+      - MORNING_REMINDER_HOUR=${MORNING_REMINDER_HOUR:-9}
+      - TIMEZONE=${TIMEZONE:-Europe/Paris}
+      - PORT=${PORT:-3000}
+      - STATE_PATH=/app/data/state.db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    networks:
+      - vitality_network
+
+networks:
+  vitality_network:
+    driver: bridge
