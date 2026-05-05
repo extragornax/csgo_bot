@@ -9,15 +9,10 @@ services:
       - "9023:3000"
     volumes:
       - ./data:/app/data
+    env_file:
+      - .env
     environment:
-      - PANDASCORE_TOKEN=${PANDASCORE_TOKEN}
-      - VITALITY_TEAM_ID=${VITALITY_TEAM_ID}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
-      - POLL_INTERVAL_SECS=${POLL_INTERVAL_SECS:-120}
-      - MORNING_REMINDER_HOUR=${MORNING_REMINDER_HOUR:-9}
-      - TIMEZONE=${TIMEZONE:-Europe/Paris}
-      - PORT=${PORT:-3000}
+      - PORT=3000
       - STATE_PATH=/app/data/state.db
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
