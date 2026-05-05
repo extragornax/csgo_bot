@@ -80,7 +80,7 @@ The bot stores its state in `/app/data/state.db` which is mounted as a volume to
 
 The `docker-compose.yml` file:
 - Builds the application from the Dockerfile
-- Exposes port 9021 for the bot (external) and 3000 internally for healthchecks
+- Exposes port 9023 for the bot (external) and 3000 internally for healthchecks
 - Mounts the `./data` directory for persistent storage
 - Sets up environment variables from `.env`
 - Includes healthcheck configuration
