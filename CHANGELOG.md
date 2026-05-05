@@ -18,3 +18,11 @@
 - Persistent data storage in ./data directory
 - Environment variable configuration
 - Healthcheck integration
+
+## v0.1.1 - Updated Docker Configuration
+
+### Changes
+- Updated Docker Compose to use port 9021 instead of 3000/3001
+- Fixed .dockerignore to include Cargo.lock
+- Updated README with proper port information
+- Enhanced documentation for data persistence and notification history

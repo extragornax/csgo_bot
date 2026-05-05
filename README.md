@@ -7,10 +7,11 @@ A bot that monitors Team Vitality's CS:GO matches and sends notifications via Te
 - Monitor Team Vitality matches via PandaScore API
 - Send Telegram notifications for all match events
 - 24-hour delayed result notifications
-- Database persistence with SQLite
+- Database persistence with SQLite for match history and notification tracking
 - Docker deployment with volume persistence
 - Healthcheck endpoint
 - Morning daily reminders
+- Duplicate notification prevention
 
 ## Prerequisites
 
@@ -41,22 +42,25 @@ Edit the `.env` file with your actual values:
 ./init-data.sh
 
 # Start the bot
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Check Status
 
 ```bash
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Check container status
-docker-compose ps
+docker compose ps
 ```
 
 ## Data Persistence
 
-The bot stores its state in `/app/data/state.db` which is mounted as a volume to `./data` on your host machine. This ensures that match history and previous notifications are preserved between container restarts.
+The bot stores its state in `/app/data/state.db` which is mounted as a volume to `./data` on your host machine. This ensures that:
+- Match history is preserved between container restarts
+- Notification history is maintained to prevent duplicate messages
+- All previous data is retained
 
 ## Configuration Options
 
@@ -76,7 +80,7 @@ The bot stores its state in `/app/data/state.db` which is mounted as a volume to
 
 The `docker-compose.yml` file:
 - Builds the application from the Dockerfile
-- Exposes port 3000 for healthchecks
+- Exposes port 9021 for the bot (external) and 3000 internally for healthchecks
 - Mounts the `./data` directory for persistent storage
 - Sets up environment variables from `.env`
 - Includes healthcheck configuration
