@@ -1,0 +1,8 @@
+# .dockerignore
+target/
+.git/
+.gitignore
+README.md
+.env.example
+Dockerfile
+Cargo.lock
