@@ -148,14 +148,28 @@ async fn get_latest_matches(
         team_id
     );
     
+    tracing::info!("Fetching matches from URL: {}", url);
+    
     let response = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", config.pandascore_token))
         .send()
-        .await?;
+        .await;
 
-    let api_response: ApiResponse<Match> = response.json().await?;
-    Ok(api_response.data)
+    match response {
+        Ok(resp) => {
+            tracing::info!("API Response status: {}", resp.status());
+            let api_response: ApiResponse<Match> = resp.json().await.map_err(|e| {
+                tracing::error!("Failed to decode JSON response from {}: {}", url, e);
+                anyhow::anyhow!("Failed to decode JSON response: {}", e)
+            })?;
+            Ok(api_response.data)
+        }
+        Err(e) => {
+            tracing::error!("Failed to fetch matches from {}: {}", url, e);
+            Err(anyhow::anyhow!("Failed to fetch matches: {}", e))
+        }
+    }
 }
 
 async fn get_match_details(
