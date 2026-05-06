@@ -41,7 +41,7 @@ pub fn format_live(match_data: &PsMatch) -> String {
 }
 
 pub fn format_result(match_data: &PsMatch, vitality_team_id: i64) -> String {
-    let (opponent_name, tournament_name, _, _) = extract_match_details(match_data);
+    let (opponent_name, tournament_name, formatted_time, _) = extract_match_details(match_data);
     let (vitality_score, opponent_score) = get_scores(match_data, vitality_team_id);
 
     if vitality_score > opponent_score {
@@ -49,7 +49,8 @@ pub fn format_result(match_data: &PsMatch, vitality_team_id: i64) -> String {
             r#"🏆 𝗩𝗜𝗖𝗧𝗢𝗜𝗥𝗘 !
 
 <b>{vitality_score} - {opponent_score}</b> {opponent_name}
-🏆 {tournament_name} · BO{}"#,
+🏆 {tournament_name} · BO{}
+📅 {formatted_time}"#,
             match_data
                 .number_of_games
                 .map_or("3".to_string(), |n| n.to_string()),
@@ -59,7 +60,8 @@ pub fn format_result(match_data: &PsMatch, vitality_team_id: i64) -> String {
             r#"💀 𝗗𝗘́𝗙𝗔𝗜𝗧𝗘
 
 <b>{vitality_score} - {opponent_score}</b> {opponent_name}
-🏆 {tournament_name} · BO{}"#,
+🏆 {tournament_name} · BO{}
+📅 {formatted_time}"#,
             match_data
                 .number_of_games
                 .map_or("3".to_string(), |n| n.to_string()),
@@ -94,7 +96,7 @@ pub fn format_daily_reminder(matches: &[&PsMatch]) -> String {
 }
 
 pub fn format_result_24h(match_data: &PsMatch, vitality_team_id: i64) -> String {
-    let (opponent_name, tournament_name, _, _) = extract_match_details(match_data);
+    let (opponent_name, tournament_name, formatted_time, _) = extract_match_details(match_data);
     let (vitality_score, opponent_score) = get_scores(match_data, vitality_team_id);
 
     if vitality_score > opponent_score {
@@ -102,7 +104,8 @@ pub fn format_result_24h(match_data: &PsMatch, vitality_team_id: i64) -> String 
             r#"🏆 𝗩𝗜𝗖𝗧𝗢𝗜𝗥𝗘 ! (24h après la fin)
 
 <b>{vitality_score} - {opponent_score}</b> {opponent_name}
-🏆 {tournament_name} · BO{}"#,
+🏆 {tournament_name} · BO{}
+📅 {formatted_time}"#,
             match_data
                 .number_of_games
                 .map_or("3".to_string(), |n| n.to_string()),
@@ -112,7 +115,8 @@ pub fn format_result_24h(match_data: &PsMatch, vitality_team_id: i64) -> String 
             r#"💀 𝗗𝗘́𝗙𝗔𝗜𝗧𝗘 (24h après la fin)
 
 <b>{vitality_score} - {opponent_score}</b> {opponent_name}
-🏆 {tournament_name} · BO{}"#,
+🏆 {tournament_name} · BO{}
+📅 {formatted_time}"#,
             match_data
                 .number_of_games
                 .map_or("3".to_string(), |n| n.to_string()),
