@@ -197,8 +197,10 @@ async fn main() -> Result<()> {
     let config = Config::from_env();
     tracing::info!("Vitality Bot starting");
 
-    let db_url = format!("sqlite:{}?mode=rwc", config.state_path);
-    let pool = sqlx::SqlitePool::connect(&db_url).await?;
+    let connect_opts = sqlx::sqlite::SqliteConnectOptions::new()
+        .filename(&config.state_path)
+        .create_if_missing(true);
+    let pool = sqlx::SqlitePool::connect_with(connect_opts).await?;
     BotState::init_db(&pool).await?;
 
     let mut bot_state = BotState::load_from_db(&pool).await?;
