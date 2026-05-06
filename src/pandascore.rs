@@ -1,11 +1,7 @@
 use anyhow::Result;
-use reqwest;
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::state::{
-    MatchState, MatchStatus, PsMatch, PsOpponentWrapper, PsResult, PsStream, PsTeam, PsTournament,
-};
+use crate::state::PsMatch;
 
 #[derive(Debug)]
 pub struct PandaScoreClient {
@@ -27,69 +23,44 @@ impl PandaScoreClient {
         }
     }
 
-    pub async fn fetch_upcoming(&self) -> Result<Vec<PsMatch>> {
-        let url = format!(
-            "https://api.pandascore.co/csgo/matches/upcoming?filter[opponent_id]={}&sort=begin_at&per_page=50",
-            self.team_id
-        );
+    async fn get(&self, path: &str, params: &[(&str, &str)]) -> Result<Vec<PsMatch>> {
+        let url = format!("https://api.pandascore.co{}", path);
+        let team_id = self.team_id.to_string();
+
+        let mut all_params = vec![("filter[opponent_id]", team_id.as_str())];
+        all_params.extend_from_slice(params);
 
         let response = self
             .http
             .get(&url)
+            .query(&all_params)
             .header("Authorization", format!("Bearer {}", self.token))
             .header("Accept", "application/json")
             .send()
             .await?;
 
         if !response.status().is_success() {
-            anyhow::bail!("PandaScore API error: {}", response.status());
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            anyhow::bail!("PandaScore API error on {}: {} — {}", url, status, body);
         }
 
         let matches: Vec<PsMatch> = response.json().await?;
         Ok(matches)
+    }
+
+    pub async fn fetch_upcoming(&self) -> Result<Vec<PsMatch>> {
+        self.get("/csgo/matches/upcoming", &[("sort", "begin_at"), ("per_page", "50")])
+            .await
     }
 
     pub async fn fetch_running(&self) -> Result<Vec<PsMatch>> {
-        let url = format!(
-            "https://api.pandascore.co/csgo/matches/running?filter[opponent_id]={}",
-            self.team_id
-        );
-
-        let response = self
-            .http
-            .get(&url)
-            .header("Authorization", format!("Bearer {}", self.token))
-            .header("Accept", "application/json")
-            .send()
-            .await?;
-
-        if !response.status().is_success() {
-            anyhow::bail!("PandaScore API error: {}", response.status());
-        }
-
-        let matches: Vec<PsMatch> = response.json().await?;
-        Ok(matches)
+        self.get("/csgo/matches/running", &[]).await
     }
 
     pub async fn fetch_past(&self, count: usize) -> Result<Vec<PsMatch>> {
-        let url = format!(
-            "https://api.pandascore.co/csgo/matches/past?filter[opponent_id]={}&sort=-end_at&per_page={}",
-            self.team_id, count
-        );
-
-        let response = self
-            .http
-            .get(&url)
-            .header("Authorization", format!("Bearer {}", self.token))
-            .header("Accept", "application/json")
-            .send()
-            .await?;
-
-        if !response.status().is_success() {
-            anyhow::bail!("PandaScore API error: {}", response.status());
-        }
-
-        let matches: Vec<PsMatch> = response.json().await?;
-        Ok(matches)
+        let per_page = count.to_string();
+        self.get("/csgo/matches/past", &[("sort", "-end_at"), ("per_page", &per_page)])
+            .await
     }
 }

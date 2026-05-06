@@ -1,8 +1,7 @@
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Datelike, Timelike, Utc};
 use chrono_tz::Europe::Paris;
-use std::collections::HashMap;
 
-use crate::state::{MatchState, MatchStatus, PsMatch, PsResult, PsTeam};
+use crate::state::PsMatch;
 
 pub fn format_announced(match_data: &PsMatch) -> String {
     let (opponent_name, tournament_name, formatted_time, stream_url) =
