@@ -11,7 +11,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::notifications::{
-    format_announced, format_daily_reminder, format_live, format_result, format_result_24h,
+    format_announced, format_daily_reminder, format_ended, format_live, format_result_24h,
     match_is_today,
 };
 use crate::pandascore::PandaScoreClient;
@@ -139,14 +139,14 @@ async fn poll_cycle(
         entry.status = MatchStatus::Finished;
 
         if !entry.notified_result {
-            let msg = format_result(m, config.vitality_team_id);
+            let msg = format_ended(m);
             if let Err(e) = tg.send_message(&msg).await {
-                tracing::error!("Failed to send result notification for match {}: {}", m.id, e);
+                tracing::error!("Failed to send ended notification for match {}: {}", m.id, e);
                 continue;
             }
             entry.notified_result = true;
             entry.result_timestamp = Some(Utc::now().to_rfc3339());
-            tracing::info!("Notified result for match {}", m.id);
+            tracing::info!("Notified match ended {}", m.id);
         }
 
         if !entry.notified_result_24h {
@@ -176,13 +176,15 @@ async fn poll_cycle(
 
     if !already_sent && now_paris.hour() >= config.morning_hour && now_paris.hour() < config.morning_hour + 1 {
         let today_matches: Vec<_> = upcoming.iter().filter(|m| match_is_today(m)).collect();
-        let msg = format_daily_reminder(&today_matches);
-        if let Err(e) = tg.send_message(&msg).await {
-            tracing::error!("Failed to send daily reminder: {}", e);
-        } else {
-            bot_state.last_daily_reminder = Some(today_str);
-            tracing::info!("Sent daily morning reminder");
+        if !today_matches.is_empty() {
+            let msg = format_daily_reminder(&today_matches);
+            if let Err(e) = tg.send_message(&msg).await {
+                tracing::error!("Failed to send daily reminder: {}", e);
+            } else {
+                tracing::info!("Sent daily morning reminder");
+            }
         }
+        bot_state.last_daily_reminder = Some(today_str);
     }
 
     bot_state.save_to_db(pool).await?;
