@@ -3,14 +3,14 @@ use chrono_tz::Europe::Paris;
 
 use crate::state::PsMatch;
 
-pub fn format_announced(match_data: &PsMatch) -> String {
+pub fn format_announced(match_data: &PsMatch, vitality_team_id: i64) -> String {
     let (opponent_name, tournament_name, formatted_time, stream_url) =
-        extract_match_details(match_data);
+        extract_match_details(match_data, vitality_team_id);
 
     format!(
         r#"🎮 𝗠𝗔𝗧𝗖𝗛 𝗔𝗡𝗡𝗢𝗡𝗖𝗘́
 
-<b>{opponent_name}</b>
+Vitality vs <b>{opponent_name}</b>
 🏆 {tournament_name}
 📅 {formatted_time}
 🎯 BO{}
@@ -23,13 +23,14 @@ pub fn format_announced(match_data: &PsMatch) -> String {
     )
 }
 
-pub fn format_live(match_data: &PsMatch) -> String {
-    let (opponent_name, tournament_name, _, stream_url) = extract_match_details(match_data);
+pub fn format_live(match_data: &PsMatch, vitality_team_id: i64) -> String {
+    let (opponent_name, tournament_name, _, stream_url) =
+        extract_match_details(match_data, vitality_team_id);
 
     format!(
         r#"🔴 𝗟𝗜𝗩𝗘 𝗠𝗔𝗜𝗡𝗧𝗘𝗡𝗔𝗡𝗧
 
-<b>{opponent_name}</b>
+Vitality vs <b>{opponent_name}</b>
 🏆 {tournament_name} · BO{}
 
 📺 {}"#,
@@ -40,13 +41,14 @@ pub fn format_live(match_data: &PsMatch) -> String {
     )
 }
 
-pub fn format_ended(match_data: &PsMatch) -> String {
-    let (opponent_name, tournament_name, formatted_time, _) = extract_match_details(match_data);
+pub fn format_ended(match_data: &PsMatch, vitality_team_id: i64) -> String {
+    let (opponent_name, tournament_name, formatted_time, _) =
+        extract_match_details(match_data, vitality_team_id);
 
     format!(
         r#"🏁 𝗠𝗔𝗧𝗖𝗛 𝗧𝗘𝗥𝗠𝗜𝗡𝗘́
 
-vs <b>{opponent_name}</b>
+Vitality vs <b>{opponent_name}</b>
 🏆 {tournament_name} · BO{}
 📅 {formatted_time}"#,
         match_data
@@ -55,7 +57,7 @@ vs <b>{opponent_name}</b>
     )
 }
 
-pub fn format_daily_reminder(matches: &[&PsMatch]) -> String {
+pub fn format_daily_reminder(matches: &[&PsMatch], vitality_team_id: i64) -> String {
     if matches.is_empty() {
         return "☀️ 𝗠𝗔𝗧𝗖𝗛 𝗔𝗨𝗝𝗢𝗨𝗥𝗗'𝗛𝗨𝗜\n\nAucun match prévu.".to_string();
     }
@@ -65,9 +67,9 @@ pub fn format_daily_reminder(matches: &[&PsMatch]) -> String {
 
     for match_data in matches {
         let (opponent_name, tournament_name, formatted_time, stream_url) =
-            extract_match_details(match_data);
+            extract_match_details(match_data, vitality_team_id);
         msg.push_str(&format!(
-            "⏰ {} — vs {} (BO{})\n   🏆 {}\n   📺 {}\n\n",
+            "⏰ {} — Vitality vs {} (BO{})\n   🏆 {}\n   📺 {}\n\n",
             formatted_time,
             opponent_name,
             match_data
@@ -82,7 +84,8 @@ pub fn format_daily_reminder(matches: &[&PsMatch]) -> String {
 }
 
 pub fn format_result_24h(match_data: &PsMatch, vitality_team_id: i64) -> String {
-    let (opponent_name, tournament_name, formatted_time, _) = extract_match_details(match_data);
+    let (opponent_name, tournament_name, formatted_time, _) =
+        extract_match_details(match_data, vitality_team_id);
     let (vitality_score, opponent_score) = get_scores(match_data, vitality_team_id);
 
     if vitality_score > opponent_score {
@@ -110,33 +113,26 @@ pub fn format_result_24h(match_data: &PsMatch, vitality_team_id: i64) -> String 
     }
 }
 
-fn extract_match_details(match_data: &PsMatch) -> (String, String, String, Option<String>) {
-    let opponent_name = if let Some(wrapper) = match_data.opponents.first() {
-        if wrapper.opponent.id == 9565 {
-            // Vitality team ID
-            match_data
-                .opponents
-                .get(1)
-                .map_or("Unknown".to_string(), |w| w.opponent.name.clone())
-        } else {
-            wrapper.opponent.name.clone()
-        }
-    } else {
-        "Unknown".to_string()
-    };
+fn extract_match_details(
+    match_data: &PsMatch,
+    vitality_team_id: i64,
+) -> (String, String, String, Option<String>) {
+    let opponent_name = match_data
+        .opponents
+        .iter()
+        .find(|w| w.opponent.id != vitality_team_id)
+        .map_or("Unknown".to_string(), |w| w.opponent.name.clone());
 
     let tournament_name = match_data
         .tournament
         .as_ref()
         .map_or("Tournoi inconnu".to_string(), |t| t.name.clone());
 
-    // Format time in French
     let formatted_time = match_data
         .begin_at
         .as_ref()
         .map_or("Heure inconnue".to_string(), |time| format_match_time(time));
 
-    // Find stream URL
     let stream_url = match_data.streams_list.as_ref().and_then(|streams| {
         streams
             .iter()

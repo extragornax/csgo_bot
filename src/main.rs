@@ -101,7 +101,7 @@ async fn poll_cycle(
             .or_insert_with(|| state::MatchState::new_upcoming(m));
 
         if !entry.notified_announced {
-            let msg = format_announced(m);
+            let msg = format_announced(m, config.vitality_team_id);
             if let Err(e) = tg.send_message(&msg).await {
                 tracing::error!("Failed to send announced notification for match {}: {}", m.id, e);
                 continue;
@@ -120,7 +120,7 @@ async fn poll_cycle(
         entry.status = MatchStatus::Running;
 
         if !entry.notified_live {
-            let msg = format_live(m);
+            let msg = format_live(m, config.vitality_team_id);
             if let Err(e) = tg.send_message(&msg).await {
                 tracing::error!("Failed to send live notification for match {}: {}", m.id, e);
                 continue;
@@ -139,7 +139,7 @@ async fn poll_cycle(
         entry.status = MatchStatus::Finished;
 
         if !entry.notified_result {
-            let msg = format_ended(m);
+            let msg = format_ended(m, config.vitality_team_id);
             if let Err(e) = tg.send_message(&msg).await {
                 tracing::error!("Failed to send ended notification for match {}: {}", m.id, e);
                 continue;
@@ -177,7 +177,7 @@ async fn poll_cycle(
     if !already_sent && now_paris.hour() >= config.morning_hour && now_paris.hour() < config.morning_hour + 1 {
         let today_matches: Vec<_> = upcoming.iter().filter(|m| match_is_today(m)).collect();
         if !today_matches.is_empty() {
-            let msg = format_daily_reminder(&today_matches);
+            let msg = format_daily_reminder(&today_matches, config.vitality_team_id);
             if let Err(e) = tg.send_message(&msg).await {
                 tracing::error!("Failed to send daily reminder: {}", e);
             } else {
